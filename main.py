@@ -1,58 +1,77 @@
 #!/usr/bin/env python3
-"""Copy entry.png to the output directory, verifying integrity.
+"""Write the 23 November 2026 front-page poster to the output directory.
 
-Stdlib only. Default output dir is /output; pass a different directory
-as the first argument, e.g. ``python3 main.py /tmp/out``.
+Stdlib only. The poster lives in this repository as ``entry.png``; this
+program checks it against the competition's limits and copies it to
+``/output/entry.png`` (or to the directory given as the first argument).
+It writes the same bytes on every run.
 """
 import hashlib
 import os
-import shutil
+import struct
 import sys
 
-SOURCE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "entry.png")
-PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
-MAX_BYTES = 1024 * 1024  # 1 MiB limit
+HERE = os.path.dirname(os.path.abspath(__file__))
+SOURCE = os.path.join(HERE, "entry.png")
 OUTPUT_NAME = "entry.png"
+PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
+MAX_BYTES = 1024 * 1024
+WANT_WIDTH = 1024
+WANT_HEIGHT = 1024
 
 
-def md5_of(path):
-    h = hashlib.md5()
-    with open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(65536), b""):
-            h.update(chunk)
-    return h.hexdigest()
+def png_dimensions(data):
+    """Return (width, height) from the IHDR chunk of a PNG byte string."""
+    if data[:8] != PNG_MAGIC:
+        raise ValueError("not a PNG file (bad magic bytes)")
+    if len(data) < 33 or data[12:16] != b"IHDR":
+        raise ValueError("not a PNG file (missing IHDR chunk)")
+    width, height = struct.unpack(">II", data[16:24])
+    return width, height
 
 
-def main():
-    out_dir = sys.argv[1] if len(sys.argv) > 1 else "/output"
-    out_path = os.path.join(out_dir, OUTPUT_NAME)
+def sha256_hex(data):
+    return hashlib.sha256(data).hexdigest()
 
-    if not os.path.isfile(SOURCE):
-        raise SystemExit(f"source not found: {SOURCE}")
 
-    with open(SOURCE, "rb") as f:
-        data = f.read()
+def main(argv):
+    out_dir = argv[1] if len(argv) > 1 else "/output"
+    dest = os.path.join(out_dir, OUTPUT_NAME)
 
-    if data[:8] != PNG_SIGNATURE:
-        raise SystemExit("entry.png is not a valid PNG (bad signature)")
-    if len(data) > MAX_BYTES:
+    with open(SOURCE, "rb") as handle:
+        blob = handle.read()
+
+    width, height = png_dimensions(blob)
+    if (width, height) != (WANT_WIDTH, WANT_HEIGHT):
         raise SystemExit(
-            f"entry.png is {len(data)} bytes, over the {MAX_BYTES} byte limit"
+            f"entry.png is {width}x{height}, expected "
+            f"{WANT_WIDTH}x{WANT_HEIGHT}"
+        )
+    if len(blob) > MAX_BYTES:
+        raise SystemExit(
+            f"entry.png is {len(blob)} bytes, over the {MAX_BYTES} byte limit"
         )
 
     os.makedirs(out_dir, exist_ok=True)
-    with open(out_path, "wb") as f:
-        f.write(data)
+    with open(dest, "wb") as handle:
+        handle.write(blob)
+    os.chmod(dest, 0o644)
 
-    # Verify the copy byte-for-byte.
-    with open(out_path, "rb") as f:
-        copied = f.read()
-    if copied != data:
-        raise SystemExit("copied file does not match entry.png")
+    # Read the copy back and confirm it is byte-identical to the source,
+    # and that it stays world-readable for the grader to collect.
+    with open(dest, "rb") as handle:
+        written = handle.read()
+    if written != blob:
+        raise SystemExit("output does not match entry.png after copying")
+    if os.stat(dest).st_mode & 0o777 != 0o644:
+        raise SystemExit("output is not mode 0644")
 
-    os.chmod(out_path, 0o644)
-    print(f"wrote {out_path} ({len(data)} bytes, md5 {md5_of(out_path)})")
+    print(
+        f"wrote {dest} ({width}x{height}, {len(blob)} bytes, "
+        f"sha256 {sha256_hex(blob)})"
+    )
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main(sys.argv))
