@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Newspaper front page poster - Monday, 23 November 2026.
 Standard library only. Deterministic: no randomness, no timestamps, no network.
-Generates entry.png (1024x1024) in the same directory as this file.
+Generates entry.png (1024x1024). Output directory, in order of precedence:
+first command-line argument, else MAKEFUN_OUTPUT_DIR, else this file's directory.
 """
 import os
 import struct
+import sys
 import zlib
 
 W = 1024
@@ -427,8 +429,24 @@ def main():
     draw_text(c, M, 1006, "THE DAILY HERALD  -  Monday, 23 November 2026  -  Page 1", 1, GREY)
     draw_text(c, W - M - text_width("All stories verified 23 Nov 2026", 1), 1006, "All stories verified 23 Nov 2026", 1, GREY)
 
-    out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "entry.png")
+    # Output directory: argv[1] > MAKEFUN_OUTPUT_DIR > this file's directory.
+    # (The grading sandbox mounts the repo read-only, so entry.png must be
+    # writable to the grader's output directory when one is given.)
+    if len(sys.argv) > 1:
+        out_dir = sys.argv[1]
+    elif os.environ.get("MAKEFUN_OUTPUT_DIR"):
+        out_dir = os.environ["MAKEFUN_OUTPUT_DIR"]
+    else:
+        out_dir = os.path.dirname(os.path.abspath(__file__))
+    out = os.path.join(out_dir, "entry.png")
     write_png(c, out)
+    os.chmod(out, 0o644)
+    # Verify: read the file back and check it is a 1024x1024 PNG.
+    with open(out, "rb") as f:
+        data = f.read(33)
+    assert data[:8] == b"\x89PNG\r\n\x1a\n", "output is not a PNG"
+    w, h = struct.unpack(">II", data[16:24])
+    assert (w, h) == (W, H), "bad dimensions %dx%d" % (w, h)
     print("wrote " + out)
 
 if __name__ == "__main__":
