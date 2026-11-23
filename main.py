@@ -411,10 +411,12 @@ def main():
     y8 = story(col_x[1], 868, "MARKETS",
         "Oil tumbles, Asia sells off",
         "Oil tumbled; Asian markets sold off on AI valuation fears.", 0)
-    # Bar chart in col 3
+    # Bar chart in col 3 (taller than before: at h=36 the bars were only
+    # 6-12 px tall and read as thin slivers; h=60 makes the 8/6/4
+    # values legible while the axis labels still clear the footer rule)
     draw_text(c, col_x[2], 868, "MARKETS  -  CHART", 1, GREY)
     draw_text(c, col_x[2], 882, "AI fears hit Asia", 2, BLACK)
-    draw_bar_chart(c, col_x[2], 912, col_w, 36, [8, 6, 4], ["OIL", "ASIA", "AI"], BLACK)
+    draw_bar_chart(c, col_x[2], 912, col_w, 60, [8, 6, 4], ["OIL", "ASIA", "AI"], BLACK)
 
     # Footer rule and text (above bottom border)
     # Note: row 3 text ends before footer; place footer at 1000? Actually canvas 1024, bottom border at 1020.
