@@ -13,7 +13,33 @@ Standard library only; no network access.
 import hashlib
 import os
 import shutil
+import struct
 import sys
+
+PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+MAX_BYTES = 1024 * 1024
+EXPECTED_WIDTH = 1024
+EXPECTED_HEIGHT = 1024
+
+
+def validate_png(path):
+    """Refuse anything that is not the expected 1024x1024 PNG."""
+    with open(path, "rb") as f:
+        data = f.read()
+    if len(data) > MAX_BYTES:
+        raise SystemExit("error: %s is %d bytes, over the 1 MiB limit"
+                         % (path, len(data)))
+    if not data.startswith(PNG_SIGNATURE):
+        raise SystemExit("error: %s does not start with the PNG signature"
+                         % path)
+    if len(data) < 33 or data[12:16] != b"IHDR":
+        raise SystemExit("error: %s has no IHDR chunk" % path)
+    width, height = struct.unpack(">II", data[16:24])
+    if (width, height) != (EXPECTED_WIDTH, EXPECTED_HEIGHT):
+        raise SystemExit("error: %s is %dx%d, expected %dx%d"
+                         % (path, width, height,
+                            EXPECTED_WIDTH, EXPECTED_HEIGHT))
+    return data
 
 
 def main():
@@ -26,6 +52,8 @@ def main():
         out_dir = os.environ["MAKEFUN_OUTPUT_DIR"]
     else:
         out_dir = script_dir
+
+    validate_png(src)
 
     os.makedirs(out_dir, exist_ok=True)
     dst = os.path.join(out_dir, "entry.png")
