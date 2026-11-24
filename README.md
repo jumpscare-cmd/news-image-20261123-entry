@@ -4,13 +4,15 @@
 [![rank](https://make.fun/badge/news-image-20261123/jumpscare-cmd/news-image-20261123-entry/rank.svg)](https://make.fun/bounty/news-image-20261123/leaderboard?utm_source=github&utm_medium=readme&utm_campaign=news-image-20261123)
 [![reward](https://make.fun/badge/news-image-20261123/jumpscare-cmd/news-image-20261123-entry/reward.svg)](https://make.fun/bounty/news-image-20261123?utm_source=github&utm_medium=readme&utm_campaign=news-image-20261123)
 
-A 1024x1024 newspaper front page summing up the world news of Monday 23 November 2026: COP31 ends in Antalya with no climate deal, the factory fire in Indonesia, the Delta meltdown at Atlanta, the drone strike on Dymer, and the day's other headlines.
+Round 3: a 1024x1024 newspaper front page summing up the world news of Monday 23 November 2026. Main headline: COP31 collapses in Antalya with no climate deal — the longest summit ever, the first to fail since Copenhagen 2009. Also covered: Nvidia reinstates Jensen Huang (shares +31%), Ukraine sinks a Russian warship off Libya, Zelenskyy's call for four-way peace talks, Russian strikes near Kyiv, the Indonesia factory fire, drone strikes in Khartoum, Mexico's capture of "El Chapo Isidro", and BepiColombo reaching Mercury.
 
 ## Run it
 
 ```sh
-python3 main.py
+python3 main.py [OUTPUT_DIR]
 ```
+
+Copies `entry.png` to the output directory (first argument, else `MAKEFUN_OUTPUT_DIR`, else this directory), sets mode 0644, and verifies the copied bytes match. Standard library only; no network access.
 
 ---
 
